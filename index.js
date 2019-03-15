@@ -5,6 +5,7 @@ const jwt = require('jsonwebtoken');
 const passport = require('passport');
 
 const LocalStrategy = require('passport-local').Strategy;
+
 const JWTStrategy = require('passport-jwt').Strategy;
 
 const {User, connectDb} = require('./models/user');
@@ -14,32 +15,28 @@ const PORT = process.env.PORT || 3000;
 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({extended: false}));
+app.use(passport.initialize());
 
-passport.use(new LocalStrategy( async (username, password, done) => {
-  try {
-    const userDocument = await UserModel.findOne({username: username}).exec();
-    const passwordsMatch = await bcrypt.compare(password, userDocument.passwordHash);
-
-    if (passwordsMatch) {
-      return done(null, userDocument);
-    } else {
-      return done('Incorrect Username / Password');
-    }
-  } catch (error) {
-    done(error);
+passport.use(new LocalStrategy(
+  function(username, password, done) {
+    User.findOne({ username: username }, function(err, user) {
+      if (err) { return done(err); }
+      if (!user) {
+        return done(null, false, { message: 'Incorrect username.' });
+      }
+      return done(null, user);
+    });
   }
-}));
+));
 
-// need to:
-// 0. create fake user
-// 1. create signup (/register)
-// 2. create login (/login)
-
-
-app.post('/login', (req, res, next) => {
-  // TODO: Use passport to verify login for fake user1
-  res.send('hey login');
-});
+app.post('/login',
+  passport.authenticate('local', {session: false}),
+  (req, res, next) => {
+    res.send('hey');
+  });
+app.get('/', (req, res, next) => {
+  res.send('hey root');
+})
 const createFakeUser = async () => {
   const passwordHash1 = await bcrypt.hash('password1', 10);  
   const user1 = new User({
