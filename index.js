@@ -15,25 +15,39 @@ const PORT = process.env.PORT || 3000;
 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({extended: false}));
-app.use(passport.initialize());
+// app.use(passport.initialize());
 
 passport.use(new LocalStrategy(
-  function(username, password, done) {
-    User.findOne({ username: username }, function(err, user) {
+  (username, password, done) => { // username, password are body of POST request
+    User.findOne({ username: username }, async (err, user) => {
       if (err) { return done(err); }
       if (!user) {
-        return done(null, false, { message: 'Incorrect username.' });
+        return done(null, false, /* {message: 'no user found'} message will be displayed on UI? */);
       }
-      return done(null, user);
+
+      const passwordMatch = await bcrypt.compare(password, user.passwordHash);
+
+      if (passwordMatch) {
+        return done(null, user); // user gets passed down to req.user
+      } else {
+        // return done('password dont match'); // this returns HTML that says password dont match
+        done(null, false, {message: 'password not matching'});
+      }
     });
   }
 ));
 
-app.post('/login',
+app.post(
+  '/login',
   passport.authenticate('local', {session: false}),
   (req, res, next) => {
-    res.send('hey');
-  });
+    const authenticatedUser = req.user;
+    res.json({
+      message: 'login successful',
+      user: authenticatedUser
+    });
+});
+
 app.get('/', (req, res, next) => {
   res.send('hey root');
 })
