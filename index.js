@@ -1,6 +1,7 @@
 const express = require('express');
 const bcrypt = require('bcrypt');
 const bodyParser = require('body-parser');
+const cookieParser = require('cookie-parser');
 const jwt = require('jsonwebtoken');
 const passport = require('passport');
 
@@ -15,8 +16,10 @@ const PORT = process.env.PORT || 3000;
 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({extended: false}));
+app.use(cookieParser());
 // app.use(passport.initialize());
 
+// loalstrategy
 passport.use(new LocalStrategy(
   (username, password, done) => { // username, password are body of POST request
     User.findOne({ username: username }, async (err, user) => {
@@ -50,6 +53,9 @@ app.post(
 
 app.get('/', (req, res, next) => {
   res.send('hey root');
+})
+app.get('/test', (req, res, next) => {
+  res.send('hey test');
 })
 const createFakeUser = async () => {
   const passwordHash1 = await bcrypt.hash('password1', 10);  
